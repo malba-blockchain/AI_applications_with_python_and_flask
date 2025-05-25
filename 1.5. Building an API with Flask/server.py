@@ -120,18 +120,50 @@ def count():
         return {"data count": len(data)}, 200
     except NameError:
         return {"message": "data not defined"}, 500
-    
 
-@app.get("/person/uuid")
+@app.get("/person/<uuid>")
 def find_by_uuid(uuid):
+    if uuid is None:
+        return {"message": "uuid parameter is missing"}, 400
+
+    if uuid.strip() == "":
+        return {"message": "uuid parameter is invalid"}, 422
+
+    for person in data:
+        if person['id'] == uuid:
+            return person, 200
+
+    return {"message": "Person not found"}, 404
+
+@app.route("/person/<uuid>", methods=['DELETE'])
+def delete_person(uuid):
     if uuid is None:
         return {"message": "uuid parameter is missing"}, 400
     
     if uuid.strip() == "":
         return {"message": "uuid parameter is invalid"}, 422
-    
+
     for person in data:
-        if person['id'] == uuid:
-            return person, 200
-        
+        if person['id'] == str(uuid):
+            data.remove(person)
+            return {"message": "Person deleted with ID " + uuid}, 200
+
     return {"message": "Person not found"}, 404
+
+
+@app.route("/person", methods=['POST'])
+def add_by_uuid():
+    new_person = request.get_json()
+    
+    if not new_person:
+         return {"message": "Invalid input, no data provided"}, 422
+    try:
+        data.append(new_person)
+    except NameError:
+        return {"message": "data not defined"}, 500
+
+    return {"message": "Person created successfully with ID " + new_person['id']}, 200
+
+@app.errorhandler(404)
+def api_not_found(error):
+    return {"message": "{API not found}"}, 404
